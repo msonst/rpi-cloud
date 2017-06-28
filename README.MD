@@ -2,6 +2,12 @@
 # Download & write rpi image
 # Assuming: 2017-04-10-raspbian-jessie-lite
 
+# After creating the boot-SD card, copy the SSH file into the root directory
+# Mount the created drives in a Linux VM and copy interfaces and wpa_supplicant.conf to
+# their correct location
+# Replace <WIFI-NAME> and <WIFI-KEY> in wpa_supplicant.conf
+# Please note that the configuration in wpa_supplicant.conf is specifically for WPA2-PSK [AES] e.g. on a WNDR3400v3
+
 ssh pi@<IP>
 
 # Set new password
