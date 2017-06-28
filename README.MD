@@ -1,5 +1,6 @@
-```Download & write rpi image
-Assuming: 2017-04-10-raspbian-jessie-lite
+```
+#Download & write rpi image
+#Assuming: 2017-04-10-raspbian-jessie-lite
 
 ssh pi@<IP>
 
