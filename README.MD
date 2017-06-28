@@ -1,4 +1,4 @@
-# Download & write rpi image
+$Download & write rpi image
 # Assuming: 2017-04-10-raspbian-jessie-lite
 
 ssh pi@<IP>
@@ -119,7 +119,7 @@ sudo chmod 777 /data/virtual
 # > ssh-keygen -R <IP>
 #######################
 # If you get an error about database drivers, then try installing php5-mysql 
-# again – for some reason, it didn’t install properly first time for me, 
+# again â€“ for some reason, it didnâ€™t install properly first time for me, 
 # although no errors were shown:
 sudo apt-get install php5-mysql
 sudo reboot
