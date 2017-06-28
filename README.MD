@@ -1,5 +1,5 @@
-$Download & write rpi image
-# Assuming: 2017-04-10-raspbian-jessie-lite
+```Download & write rpi image
+Assuming: 2017-04-10-raspbian-jessie-lite
 
 ssh pi@<IP>
 
@@ -170,4 +170,4 @@ sudo apt-get install
 sudo vcgencmd measure_temp  # > temp=52.6'C
 sudo vcgencmd get_throttled # > throttled=0x0
 
-
+```
