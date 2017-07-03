@@ -1,4 +1,20 @@
 ```
+################################################################################
+#  Copyright (c) 2017, Michael Sonst, All Rights Reserved.
+# 
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+# 
+#  http://www.apache.org/licenses/LICENSE-2.0
+# 
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+################################################################################
+
 # Download & write rpi image
 # Assuming: 2017-04-10-raspbian-jessie-lite
 
@@ -31,8 +47,7 @@ sudo apt-get -y update
 sudo apt-get -y install rsync
 
 # MYSQL https://samhobbs.co.uk/2013/10/install-owncloud-on-your-raspberry-pi
-sudo apt-get -y install apache2 php5 php5-gd php-xml-parser php5-intl php5-sqlite php5-mysql smbclient curl libcurl3 php5-curl
-sudo apt-get -y install mysql-server mysql-client php-apc
+sudo apt-get -y install apache2 php5 php5-gd php-xml-parser php5-intl php5-sqlite php5-mysql smbclient curl libcurl3 php5-curl mysql-server mysql-client php-apc git
 sudo service apache2 restart
 
 ## Install Owncloud
@@ -51,74 +66,135 @@ sudo mke2fs -j /dev/sda1
 sudo mkdir -p /data/virtual
 
 ################################################################################
-## 0) Single drive
+## 0) Single drive (for alternative see multidrive.md)
 
 # Configure fstab for automounting drives on startup
 sudo su -c "echo '/dev/sda1 /data/virtual ext3 defaults 1 2' >> /etc/fstab"
 sudo mount -a
 
-######################################
-## 1) Joined filesystems via mhddfs
-       
-## Partition & Format
-# Assuming sdb as second drive
-sudo fdisk /dev/sdb # n, p, enter, enter, enter, w
-sudo mke2fs -j /dev/sdb1
-
-# Create mountpoints
-sudo mkdir -p /data/data1
-sudo mkdir -p /data/data2
-
-# Install mhddfs and configure fstab for automounting drives on startup
-sudo apt-get -y install mhddfs
-sudo su -c "echo '/dev/sda1 /data/data1 ext3 defaults 1 2' >> /etc/fstab"
-sudo su -c "echo '/dev/sdb1 /data/data2 ext3 defaults 1 2' >> /etc/fstab"
-sudo su -c "echo 'mhddfs#/data/data1,/data/data2 /data/virtual fuse defaults,allow_other 0 0' >> /etc/fstab"
-sudo mount -a
-
-######################################
-## 2) Via mdadm (Untested)
-##   (min 3 drives)
-
-## Partition & Format
-# Assuming sdb and sdc as drives in addition to sda
-sudo fdisk /dev/sdb # n, p, enter, enter, enter, w
-sudo fdisk /dev/sdc # n, p, enter, enter, enter, w
-sudo mke2fs -j /dev/sdb1
-sudo mke2fs -j /dev/sdc1
-
-# Create MD RAID 5 
-mdadm --create /data/virtual --level=5 --raid-devices=3 /data/sda1 /data/sdb1 /data/sdc1
-
-# In the event that a drive fails do the following
-mdadm /dev/md1 --fail /dev/sda1
-
-# Format the new drive
-mdadm --add /dev/md1 /dev/sda1
-
 ################################################################################
 ## Permissions
 
-sudo usermod -aG www-data <USER> 
-sudo chown www-data:www-data /data/virtual
 sudo chmod 777 /data/virtual
+
+sudo usermod -aG www-data <USER> 
+sudo chown -R www-data:www-data /data/virtual
+sudo find /data/virtual -type f -exec chmod 664 {} + -o -type d -exec chmod 775 {} +
+sudo find /data/virtual -type d -exec chmod g+rx {} +
+sudo find /data/virtual -type f -exec chmod g+r {} +
+sudo find /data/virtual -type d -exec chmod g+s {} +
+
+sudo chown -R www-data:www-data /var/www/html
+sudo find /var/www/html -type f -exec chmod 664 {} + -o -type d -exec chmod 775 {} +
+sudo find /var/www/html -type d -exec chmod g+rx {} +
+sudo find /var/www/html -type f -exec chmod g+r {} +
+sudo find /var/www/html -type d -exec chmod g+s {} +
 
 ################################################################################
 ## Hardening
 
+sudo rm /var/www/html/index.html
+
+sudo a2enmod rewrite
+sudo a2enmod headers
+sudo a2enmod ssl
+sudo a2enmod dav_fs
+sudo service apache2 restart
+
+sudo mkdir /etc/apache2/ssl
+sudo openssl req -newkey rsa:4096 -sha512 -x509 -days 365 -nodes -keyout /etc/apache2/ssl/server.key -out /etc/apache2/ssl/server.crt
+sudo ln -s /etc/apache2/sites-available/default-ssl.conf /etc/apache2/sites-enabled/000-default-ssl.conf
+
+# Alternative (Untested)
+# cd ~
+# wget https://dl.eff.org/certbot-auto
+# chmod a+x ./certbot-auto
+# ./certbot-auto
+
+nano /etc/apache2/sites-enabled/000-default-ssl.conf
+> SSLCertificateFile      /etc/apache2/ssl/server.crt
+> SSLCertificateKeyFile   /etc/apache2/ssl/server.key
+
+nano /etc/apache2/conf-available/security.conf
+# Uncomment:
+> <Directory />
+>    AllowOverride None
+>    Order Deny,Allow
+>    Deny from all
+> </Directory>
+#
+# Add:
+> <Directory /var/www/html/owncloud>
+>   Options Indexes FollowSymLinks MultiViews
+>   AllowOverride All
+>   Order allow,deny
+>   Allow from all
+>   Satisfy Any
+> </Directory>
+#
+# Set 
+>  ServerTokens Prod
+>  ServerSignature Off
+>  Header edit Set-Cookie ^(.*)$ $1;HttpOnly;Secure
+>  Header always append X-Frame-Options SAMEORIGIN
+>  Header set X-XSS-Protection "1; mode=block"
+>  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+>  Header set X-Content-Type-Options: "nosniff"
+# # ISSUE: OC can't find files anymore #>  Header set Content-Security-Policy "default-src 'self';"
+>  RewriteEngine On
+>  RewriteCond %{THE_REQUEST} !HTTP/1\.1$
+>  RewriteRule .* - [F]
+
+nano/etc/apache2/mods-available/ssl.conf
+> SSLProtocol -all +TLSv1
+> SSLCipherSuite HIGH:!MEDIUM:!aNULL:!MD5:!RC4
+
+nano/etc/apache2/mods-available/userdir.conf
+> <LimitExcept GET POST> # OPTIONS>
+
+nano /etc/apache2/apache2.conf
+> Timeout 60
+
+sudo service apache2 restart
+
+
+# On backup node
+ssh-copy-id -i ~/.ssh/id_rsa.pub <USER>@<OWNCLOUD_INTERNAL_IP>
+
+nano /boot/config.txt
+> dtoverlay=pi3-disable-wifi
+> dtoverlay=pi3-disable-bt
+
+# On owncloud node
+sudo ifdown wlan0
+sudo apt-get install -y wipe
+sudo wipe /etc/wpa_supplicant/wpa_supplicant.conf
+
+sudo nano /etc/ssh/sshd_config
+> ChallengeResponseAuthentication no
+> PasswordAuthentication no
+> UsePAM no
+> PermitRootLogin no
+sudo /etc/init.d/ssh reload
+
 ################################################################################
 ## Router Setup 
 # - port forwarding to owncloud pi
-# - Setup ddns
+# - Setup ddns ==> <DDNS>
+# Inbound https
+# Outbound https, http
+
+nano /var/www/html/owncloud/config/config.php
+> 'trusted_domains' =>
+>  array (
+>    0 => '<STATICIP>',
+>    1 => '<DDNS>',
+>  ),
 
 ################################################################################
 ## Setup Owncloud
 # - Set data dir during setup to /data/virtual
 # - Set DB to MySQL
-
-################################################################################
-# END
-################################################################################
 
 ################################################################################
 ## Troubleshooting
@@ -176,5 +252,4 @@ sudo apt-get install
 ## Interesting things to measure
 sudo vcgencmd measure_temp  # > temp=52.6'C
 sudo vcgencmd get_throttled # > throttled=0x0
-
 ```
