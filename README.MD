@@ -200,6 +200,7 @@ nano /var/www/html/owncloud/config/config.php
 ## Troubleshooting
 # WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED! 
 # > ssh-keygen -R <IP>
+
 #######################
 # If you get an error about database drivers, then try installing php5-mysql 
 # again – for some reason, it didn’t install properly first time for me, 
