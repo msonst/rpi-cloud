@@ -49,6 +49,8 @@ sudo apt-get -y update
 sudo apt-get -y install rsync
 
 sudo apt-get -y install apache2 php5 php5-gd php-xml-parser php5-intl php5-sqlite php5-mysql smbclient curl libcurl3 php5-curl mysql-server mysql-client php-apc git
+sudo apt-get -y install git
+
 sudo service apache2 restart
 
 ## Install cloud
@@ -183,7 +185,12 @@ sudo /etc/init.d/ssh reload
 # - port forwarding to cloud pi
 # - Setup ddns ==> <DDNS>
 # Inbound https
-# Outbound https, http
+# Outbound https, http, ntp
+
+################################################################################
+## Setup cloud
+# - Set data dir during setup to /data/virtual
+# - Set DB to MySQL
 
 nano /var/www/html/nextcloud/config/config.php
 > 'trusted_domains' =>
@@ -191,11 +198,6 @@ nano /var/www/html/nextcloud/config/config.php
 >    0 => '<STATICIP>',
 >    1 => '<DDNS>',
 >  ),
-
-################################################################################
-## Setup cloud
-# - Set data dir during setup to /data/virtual
-# - Set DB to MySQL
 
 ################################################################################
 ## Troubleshooting
@@ -223,7 +225,7 @@ mysql> DROP USER 'oc_admin'@'%';
 ## Reset MySQL
 mysql -u root -p
 mysql> SHOW DATABASES;
-mysql> DROP DATABASE IF EXISTS cloud;
+mysql> DROP DATABASE IF EXISTS nextcloud;
 mysql> quit
 
 #######################
@@ -233,6 +235,20 @@ mysql> quit
 sudo rm /etc/apache2/conf-enabled/nextcloud.conf
 sudo rm /etc/apache2/conf-available/nextcloud.conf
 sudo systemctl restart apache2
+
+#######################
+# Stuck in loop:                      
+# Authentication required
+# This action requires you to confirm your password
+sudo systemctl stop ntp
+sudo ntpd -q -g
+sudo systemctl start ntp
+
+#######################
+# Rescan file system (run in /var/www/html/nextcloud)  
+# This can be used to rescan e.g. after a scp import  
+sudo -u www-data php occ files:scan
+
 
 #######################
 ## Benchmark system
