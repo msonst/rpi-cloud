@@ -53,11 +53,11 @@ sudo apt-get -y install apache2 php5 php5-gd php-xml-parser php5-intl php5-sqlit
 sudo service apache2 restart
 
 ## Install Owncloud
-wget https://download.owncloud.org/community/owncloud-10.0.2.zip
-sudo cp owncloud-10.0.2.zip /var/www/html
+wget https://download.nextcloud.com/server/releases/nextcloud-12.0.0.zip
+sudo cp nextcloud-12.0.0.zip /var/www/html
 cd /var/www/html
-sudo unzip -q owncloud-10.0.2.zip
-sudo rm owncloud-10.0.2.zip
+sudo unzip -q nextcloud-12.0.0.zip
+sudo rm nextcloud-12.0.0.zip
 
 ## Partition & Format
 # Assuming sda as drive
