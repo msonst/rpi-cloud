@@ -48,11 +48,10 @@ sudo apt-get -y dist-upgrade
 sudo apt-get -y update 
 sudo apt-get -y install rsync
 
-# MYSQL https://samhobbs.co.uk/2013/10/install-owncloud-on-your-raspberry-pi
 sudo apt-get -y install apache2 php5 php5-gd php-xml-parser php5-intl php5-sqlite php5-mysql smbclient curl libcurl3 php5-curl mysql-server mysql-client php-apc git
 sudo service apache2 restart
 
-## Install Owncloud
+## Install cloud
 wget https://download.nextcloud.com/server/releases/nextcloud-12.0.0.zip
 sudo cp nextcloud-12.0.0.zip /var/www/html
 cd /var/www/html
@@ -126,7 +125,7 @@ nano /etc/apache2/conf-available/security.conf
 > </Directory>
 #
 # Add:
-> <Directory /var/www/html/owncloud>
+> <Directory /var/www/html/nextcloud>
 >   Options Indexes FollowSymLinks MultiViews
 >   AllowOverride All
 >   Order allow,deny
@@ -161,13 +160,13 @@ sudo service apache2 restart
 
 
 # On backup node
-ssh-copy-id -i ~/.ssh/id_rsa.pub <USER>@<OWNCLOUD_INTERNAL_IP>
+ssh-copy-id -i ~/.ssh/id_rsa.pub <USER>@<CLOUD_INTERNAL_IP>
 
 nano /boot/config.txt
 > dtoverlay=pi3-disable-wifi
 > dtoverlay=pi3-disable-bt
 
-# On owncloud node
+# On cloud node
 sudo ifdown wlan0
 sudo apt-get install -y wipe
 sudo wipe /etc/wpa_supplicant/wpa_supplicant.conf
@@ -181,12 +180,12 @@ sudo /etc/init.d/ssh reload
 
 ################################################################################
 ## Router Setup 
-# - port forwarding to owncloud pi
+# - port forwarding to cloud pi
 # - Setup ddns ==> <DDNS>
 # Inbound https
 # Outbound https, http
 
-nano /var/www/html/owncloud/config/config.php
+nano /var/www/html/nextcloud/config/config.php
 > 'trusted_domains' =>
 >  array (
 >    0 => '<STATICIP>',
@@ -194,7 +193,7 @@ nano /var/www/html/owncloud/config/config.php
 >  ),
 
 ################################################################################
-## Setup Owncloud
+## Setup cloud
 # - Set data dir during setup to /data/virtual
 # - Set DB to MySQL
 
@@ -224,15 +223,15 @@ mysql> DROP USER 'oc_admin'@'%';
 ## Reset MySQL
 mysql -u root -p
 mysql> SHOW DATABASES;
-mysql> DROP DATABASE IF EXISTS owncloud;
+mysql> DROP DATABASE IF EXISTS cloud;
 mysql> quit
 
 #######################
 # Accidently installed a version 7.x.x e.g. via apt causes the following issues after
 # reinstallation version 10:
-# The requested URL /owncloud/index.php was not found on this server.
-sudo rm /etc/apache2/conf-enabled/owncloud.conf
-sudo rm /etc/apache2/conf-available/owncloud.conf
+# The requested URL /nextcloud/index.php was not found on this server.
+sudo rm /etc/apache2/conf-enabled/nextcloud.conf
+sudo rm /etc/apache2/conf-available/nextcloud.conf
 sudo systemctl restart apache2
 
 #######################
