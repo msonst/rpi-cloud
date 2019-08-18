@@ -270,4 +270,8 @@ sudo apt-get install
 ## Interesting things to measure
 sudo vcgencmd measure_temp  # > temp=52.6'C
 sudo vcgencmd get_throttled # > throttled=0x0
+
+#######################
+## DynDNS: https://www.duckdns.org/
+
 ```
